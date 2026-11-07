@@ -11,9 +11,51 @@ const addSong = async (req, res) => {
     const audioUpload = await cloudinary.uploader.upload(audioFile.path, {
       resource_type: "video",
     });
-  } catch (error) {}
+
+    const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
+      resource_type: "image",
+    });
+
+    const duration = `${Math.floor(audioUpload.duration / 60)}:${Math.floor(audioUpload.duration % 60)}`;
+
+    const songData = {
+      name,
+      desc,
+      album,
+      image: imageUpload.secure_url,
+      file: audioUpload.secure_url,
+      duration,
+    };
+
+    const song = songModel(songData);
+    await song.save();
+
+    res.json({ success: true, message: "Song Added" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
 };
 
-const listSong = async (req, res) => {};
+const listSong = async (req, res) => {
+  try {
+    const allSongs = await songModel.find({});
+    res.json({ success: true, songs: allSongs });
+  } catch (error) {
+    res.json({ success: false });
+  }
+};
 
-export { addSong, listSong };
+const removeSong = async (req, res) => {
+  try {
+    const { id } = req.body || {};
+    if (!id) {
+      return res.json({ success: false, message: "Song ID is required" });
+    }
+    await songModel.findByIdAndDelete(id);
+    res.json({ success: true, message: "Song removed" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export { addSong, listSong, removeSong };
